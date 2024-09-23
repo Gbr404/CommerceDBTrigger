@@ -76,3 +76,49 @@ CREATE TRIGGER trigger_regist_exclvend
 AFTER DELETE ON vendas
 FOR EACH ROW 
 EXECUTE FUNCTION regist_exclvend();
+
+/*Trigger para registro do historico de nomes*/
+
+CREATE TABLE historico_nomes(
+  id SERIAL PRIMARY KEY,
+  cliente_id INT,
+  nome_antigo VARCHAR(50),
+  data_modificado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION regist_nome()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO historico_nomes(cliente_id, nome_antigo)
+  VALUES(OLD.id, OLD.nome);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_regist_nome
+BEFORE UPDATE ON clientes
+FOR EACH ROW
+EXECUTE FUNCTION regist_nome();
+
+/*Trigger para estoque do projeto */
+
+CREATE TABLE estoque(
+  id SERIAL PRIMARY KEY,
+  produto_id INT,
+  quantidade INT
+);
+
+CREATE OR REPLACE FUNCTION estoq_vend()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE estoque 
+  SET quantidade = quantidade - NEW.qtd
+  WHERE produto_id = NEW.produto_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_estoq_vend
+AFTER INSERT ON vendas
+FOR EACH ROW 
+EXECUTE FUNCTION estoq_vend();
